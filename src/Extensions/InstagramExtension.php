@@ -92,7 +92,25 @@ class InstagramExtension extends DataExtension
     public function setInstagramCacheContent()
     {
         $url = "https://www.instagram.com/" . $this->owner->InstagramUsername . "/?__a=1";
-        $json = file_get_contents($url);
+
+        $ch = curl_init();
+        curl_setopt ($ch, CURLOPT_URL, $url);
+        curl_setopt ($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
+        $json = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            echo curl_error($ch);
+            $json = null;
+        } else {
+            curl_close($ch);
+        }
+
+        if (!is_string($json) || !strlen($json)) {
+            $json = null;
+        }
+
+//        $json = file_get_contents($url);
         $data = json_decode($json, true);
 
         if ($data) {
