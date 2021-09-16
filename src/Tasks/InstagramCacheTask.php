@@ -40,8 +40,8 @@ class InstagramCacheTask extends BuildTask
             }
 
             DB::alteration_message('Updates complete.');
+        } else {
+            DB::alteration_message('No feeds to update.');
         }
-
-        DB::alteration_message('No feeds to update.');
     }
 }
