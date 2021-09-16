@@ -40,33 +40,35 @@ class InstagramExtension extends DataExtension
      */
     public function getInstagramPosts()
     {
-        $feed = $this->getInstagramCacheContent();
-        $limit = $this->owner->InstagramLimit ? $this->owner->InstagramLimit : null;
+        if ($this->owner->InstagramUsername) {
+            $feed = $this->getInstagramCacheContent();
+            $limit = $this->owner->InstagramLimit ? $this->owner->InstagramLimit : null;
 
-        if ($feed['graphql']['user']['edge_owner_to_timeline_media']['edges']) {
-            $posts = array_slice($feed['graphql']['user']['edge_owner_to_timeline_media']['edges'], 0, $limit, true);
+            if ($feed['graphql']['user']['edge_owner_to_timeline_media']['edges']) {
+                $posts = array_slice($feed['graphql']['user']['edge_owner_to_timeline_media']['edges'], 0, $limit, true);
 
-            $data = ArrayList::create();
+                $data = ArrayList::create();
 
-            foreach ($posts as $post) {
-                $data->push([
-                    'ID' => $post['node']['id'],
-                    'Shortcode' => $post['node']['shortcode'],
-                    'Thumbnail' => 'data:image/jpg;base64,'.base64_encode(@file_get_contents($post['node']['thumbnail_src'])),
-                    'Owner' => [
-                        'ID' => $post['node']['owner']['id'],
-                        'Username' => $post['node']['owner']['username']
-                    ],
-                    'Alt' => $post['node']['accessibility_caption'],
-                    'Text' => $post['node']['edge_media_to_caption']['edges'][0]['node']['text'],
-                    'Comments' => $post['node']['edge_media_to_comment']['count'],
-                    'Likes' => $post['node']['edge_liked_by']['count'],
-                    'Date' => date('d F Y', $post['node']['taken_at_timestamp']),
-                    'Type' => 'Instagram'
-                ]);
+                foreach ($posts as $post) {
+                    $data->push([
+                        'ID' => $post['node']['id'],
+                        'Shortcode' => $post['node']['shortcode'],
+                        'Thumbnail' => 'data:image/jpg;base64,'.base64_encode(@file_get_contents($post['node']['thumbnail_src'])),
+                        'Owner' => [
+                            'ID' => $post['node']['owner']['id'],
+                            'Username' => $post['node']['owner']['username']
+                        ],
+                        'Alt' => $post['node']['accessibility_caption'],
+                        'Text' => $post['node']['edge_media_to_caption']['edges'][0]['node']['text'],
+                        'Comments' => $post['node']['edge_media_to_comment']['count'],
+                        'Likes' => $post['node']['edge_liked_by']['count'],
+                        'Date' => date('d F Y', $post['node']['taken_at_timestamp']),
+                        'Type' => 'Instagram'
+                    ]);
+                }
+
+                return $data;
             }
-
-            return $data;
         }
 
         return ArrayList::create();
