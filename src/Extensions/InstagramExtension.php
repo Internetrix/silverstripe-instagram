@@ -2,6 +2,8 @@
 
 namespace Internetrix\Instagram\Extensions;
 
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\TextField;
@@ -91,32 +93,45 @@ class InstagramExtension extends DataExtension
      */
     public function setInstagramCacheContent()
     {
-        $url = "https://www.instagram.com/" . $this->owner->InstagramUsername . "/?__a=1";
+        $username = $this->owner->InstagramUsername;
+        if ($username) {
+            $url = "https://www.instagram.com/" . $username . "/channel/?__a=1";
 
-        $ch = curl_init();
-        curl_setopt ($ch, CURLOPT_URL, $url);
-        curl_setopt ($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
-        $json = curl_exec($ch);
+            $request = Injector::inst()->get(HTTPRequest::class);
+            $session = $request->getSession();
+            $sessionID = $session->getAll()['SecurityID'];
 
-        if (curl_errno($ch)) {
-            echo curl_error($ch);
-            $json = null;
-        } else {
-            curl_close($ch);
-        }
+            $ch = curl_init();
+            curl_setopt ($ch, CURLOPT_URL, $url);
+            curl_setopt ($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Cookie: ds_user=' . $username . '; igfl=' . $username . '; sessionid=' . $sessionID,
+                'User-Agent: Instagram 7.16.0 Android'
+            ));
+            header('Content-Type: application/json');
+            $json = curl_exec($ch);
 
-        if (!is_string($json) || !strlen($json)) {
-            $json = null;
-        }
+            if (curl_errno($ch)) {
+                echo curl_error($ch);
+                $json = null;
+            } else {
+                curl_close($ch);
+            }
+
+            if (!is_string($json) || !strlen($json)) {
+                $json = null;
+            }
 
 //        $json = file_get_contents($url);
-        $data = json_decode($json, true);
+            $data = json_decode($json, true);
 
-        if ($data) {
-            $file = $this->getInstagramCacheFile();
+            if ($data) {
+                $file = $this->getInstagramCacheFile();
 
-            file_put_contents($file, serialize($data));
+                file_put_contents($file, serialize($data));
+            }
         }
     }
 
